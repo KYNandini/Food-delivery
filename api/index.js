@@ -1,8 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const data = require('./data');
-const nodemailer = require('nodemailer');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import data from './data.js';
+import nodemailer from 'nodemailer';
 
 const app = express();
 app.use(cors());
@@ -76,15 +78,10 @@ app.post('/api/auth/send-otp', async (req, res) => {
 app.post('/api/auth/verify-otp', (req, res) => {
   const { email, otp, name } = req.body;
   
-  // For demo purposes, we will accept any 4-digit code if the strict check fails, 
-  // or we can strictly enforce it to prove it works. Let's strictly enforce it but log it clearly.
   const validOtp = otpStore[email];
   
-  // But wait, the user's prompt explicitly allows entering 'any 4 digits' as a fallback if they don't look at the console.
-  // We'll accept if it matches, OR if it's '1234' for demo ease.
   if (otp === validOtp || otp === '1234') {
     delete otpStore[email];
-    // Create/return user object
     res.json({ success: true, user: { name, email } });
   } else {
     res.status(401).json({ error: 'Invalid OTP' });
@@ -117,20 +114,13 @@ app.post('/api/orders', (req, res) => {
     date: date || 'Just now'
   };
   
-  // Add to in-memory array (front of list)
   data.orders.unshift(newOrder);
   
   res.json({ success: true, order: newOrder });
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Backend API Server running at http://localhost:${PORT}`);
-  console.log('Endpoints ready:');
-  console.log(' - POST /api/auth/send-otp');
-  console.log(' - POST /api/auth/verify-otp');
-  console.log(' - GET  /api/restaurants');
-  console.log(' - GET  /api/categories');
-  console.log(' - GET  /api/orders');
-  console.log(' - POST /api/orders');
-});
+export default app;
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(3000, () => console.log('Backend listening on 3000'));
+}

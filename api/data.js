@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   categories: [
     { id: 1, name: 'South Indian', icon: '🍛' },
     { id: 2, name: 'Biryani', icon: '🥘' },

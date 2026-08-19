@@ -67,9 +67,9 @@ async function init() {
   
   try {
     const [catRes, restRes, ordRes] = await Promise.all([
-      fetch('http://localhost:3000/api/categories'),
-      fetch('http://localhost:3000/api/restaurants'),
-      fetch('http://localhost:3000/api/orders')
+      fetch('/api/categories'),
+      fetch('/api/restaurants'),
+      fetch('/api/orders')
     ]);
     
     data.categories = await catRes.json();
@@ -117,7 +117,7 @@ async function sendOTP(e) {
   state.tempUser = { name, email };
   
   try {
-    const res = await fetch('http://localhost:3000/api/auth/send-otp', {
+    const res = await fetch('/api/auth/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -141,7 +141,7 @@ async function verifyOTP(e) {
   const otp = document.getElementById('auth-otp').value;
   if(otp.length === 4) {
     try {
-      const res = await fetch('http://localhost:3000/api/auth/verify-otp', {
+      const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: state.tempUser.email, name: state.tempUser.name, otp })
@@ -426,7 +426,7 @@ async function checkout() {
   };
   
   try {
-    const res = await fetch('http://localhost:3000/api/orders', {
+    const res = await fetch('/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderPayload)
