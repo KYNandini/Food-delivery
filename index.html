@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Leaflet Map CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   </head>
   <body>
     <div id="app">
@@ -33,7 +36,7 @@
         <section id="view-home" class="view active">
           <div class="search-bar">
             <span class="material-icons-round search-icon">search</span>
-            <input type="text" placeholder="Search for food, restaurants...">
+            <input type="text" id="search-input" placeholder="Search for food, restaurants...">
             <button class="filter-btn"><span class="material-icons-round">tune</span></button>
           </div>
           
@@ -73,6 +76,11 @@
           </div>
         </section>
 
+        <!-- Map View -->
+        <section id="view-map" class="view" style="padding: 0;">
+          <div id="map-container" style="width: 100%; height: 100vh; position: absolute; top: 0; left: 0; z-index: 0;"></div>
+        </section>
+
         <!-- Profile View -->
         <section id="view-profile" class="view">
           <h2 class="page-title">Profile</h2>
@@ -97,7 +105,7 @@
         <div class="drawer-footer">
           <div class="cart-total">
             <span>Total</span>
-            <span id="cart-total-price">$0.00</span>
+            <span id="cart-total-price">₹0</span>
           </div>
           <button id="checkout-btn" class="btn btn-primary btn-block">Checkout</button>
         </div>
@@ -107,18 +115,28 @@
       <!-- Auth Modal -->
       <div id="auth-modal" class="modal">
         <div class="modal-content glass">
-          <h2>Welcome Back</h2>
-          <p>Sign in to continue</p>
-          <form id="login-form">
+          <h2 id="auth-title">Create Account</h2>
+          <p id="auth-subtitle">Enter details to get started</p>
+          
+          <form id="email-form">
+            <div class="input-group">
+              <span class="material-icons-round">person</span>
+              <input type="text" id="auth-name" placeholder="Full Name" required>
+            </div>
             <div class="input-group">
               <span class="material-icons-round">email</span>
-              <input type="email" id="email" placeholder="Email (e.g. test@test.com)" required>
+              <input type="email" id="auth-email" placeholder="Email Address" required>
             </div>
+            <button type="submit" class="btn btn-primary btn-block">Send OTP</button>
+          </form>
+          
+          <form id="otp-form" style="display: none;">
             <div class="input-group">
-              <span class="material-icons-round">lock</span>
-              <input type="password" id="password" placeholder="Password (any)" required>
+              <span class="material-icons-round">pin</span>
+              <input type="text" id="auth-otp" placeholder="Enter 4-digit OTP" pattern="[0-9]{4}" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            <button type="submit" class="btn btn-primary btn-block">Verify & Login</button>
+            <p style="margin-top: 16px; font-size: 13px; color: var(--text-secondary); cursor: pointer; text-align: center;" onclick="app.resetAuth()">Change Email Address</p>
           </form>
         </div>
       </div>
@@ -128,6 +146,10 @@
         <button class="nav-item active" data-target="home">
           <span class="material-icons-round">home</span>
           <span>Home</span>
+        </button>
+        <button class="nav-item" data-target="map">
+          <span class="material-icons-round">map</span>
+          <span>Map</span>
         </button>
         <button class="nav-item" data-target="orders">
           <span class="material-icons-round">receipt_long</span>

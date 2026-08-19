@@ -1,61 +1,7 @@
 import './style.css'
 
 // Mock Data
-const data = {
-  categories: [
-    { id: 1, name: 'Burger', icon: '🍔' },
-    { id: 2, name: 'Pizza', icon: '🍕' },
-    { id: 3, name: 'Sushi', icon: '🍣' },
-    { id: 4, name: 'Dessert', icon: '🍩' },
-    { id: 5, name: 'Drinks', icon: '🥤' }
-  ],
-  restaurants: [
-    {
-      id: 1,
-      name: 'Burger Joint',
-      image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      rating: 4.8,
-      time: '15-25 min',
-      price: '$$',
-      category: 'Burger',
-      menu: [
-        { id: 101, name: 'Classic Cheeseburger', desc: 'Beef patty, cheddar, lettuce, tomato, special sauce', price: 8.99, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' },
-        { id: 102, name: 'Double Bacon Burger', desc: 'Two beef patties, bacon, cheddar, BBQ sauce', price: 12.99, image: 'https://images.unsplash.com/photo-1594212202875-861111812796?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' },
-        { id: 103, name: 'Fries', desc: 'Crispy golden fries', price: 3.99, image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Pizza Paradiso',
-      image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      rating: 4.5,
-      time: '30-40 min',
-      price: '$$$',
-      category: 'Pizza',
-      menu: [
-        { id: 201, name: 'Margherita', desc: 'Tomato sauce, fresh mozzarella, basil', price: 14.99, image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' },
-        { id: 202, name: 'Pepperoni', desc: 'Tomato sauce, mozzarella, pepperoni slices', price: 16.99, image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }
-      ]
-    },
-    {
-      id: 3,
-      name: 'Sushi Zen',
-      image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-      rating: 4.9,
-      time: '25-35 min',
-      price: '$$$',
-      category: 'Sushi',
-      menu: [
-        { id: 301, name: 'Spicy Tuna Roll', desc: 'Fresh tuna, spicy mayo, cucumber', price: 11.99, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' },
-        { id: 302, name: 'Salmon Nigiri', desc: 'Fresh salmon over pressed vinegar rice (2pcs)', price: 7.99, image: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?ixlib=rb-1.2.1&auto=format&fit=crop&w=200&q=80' }
-      ]
-    }
-  ],
-  orders: [
-    { id: 'ORD-8291', restaurantId: 1, items: [{name: 'Classic Cheeseburger', qty: 1}, {name: 'Fries', qty: 1}], total: 12.98, status: 'preparing', date: 'Today, 7:30 PM' },
-    { id: 'ORD-7102', restaurantId: 2, items: [{name: 'Margherita', qty: 1}], total: 14.99, status: 'delivered', date: 'Yesterday, 8:15 PM' }
-  ]
-};
+let data = { categories: [], restaurants: [], orders: [] };
 
 // State
 let state = {
@@ -63,8 +9,41 @@ let state = {
   user: null,
   activeView: 'home',
   activeCategory: 'All',
-  selectedRestaurant: null
+  selectedRestaurant: null,
+  searchQuery: ''
 };
+
+let userLocation = null;
+let mapInstance = null;
+
+// Geo Functions
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  var R = 6371; // Radius of the earth in km
+  var dLat = deg2rad(lat2-lat1);
+  var dLon = deg2rad(lon2-lon1); 
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c; 
+}
+function deg2rad(deg) { return deg * (Math.PI/180); }
+
+function filterNearMe() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
+      state.activeCategory = 'Near Me';
+      renderCategories();
+      renderRestaurants();
+    }, (error) => {
+      alert("Error getting location: " + error.message);
+    });
+  } else {
+    alert("Geolocation is not supported by this browser.");
+  }
+}
 
 // Elements
 const els = {
@@ -76,18 +55,34 @@ const els = {
   cartItemsContainer: document.getElementById('cart-items-container'),
   cartTotalPrice: document.getElementById('cart-total-price'),
   authModal: document.getElementById('auth-modal'),
-  loginForm: document.getElementById('login-form'),
   logoutBtn: document.getElementById('logout-btn'),
   userName: document.querySelector('.user-name'),
-  profileEmail: document.getElementById('profile-email')
+  profileEmail: document.getElementById('profile-email'),
+  searchInput: document.getElementById('search-input')
 };
 
 // Init
-function init() {
+async function init() {
   checkAuth();
-  renderCategories();
-  renderRestaurants();
-  renderOrders();
+  
+  try {
+    const [catRes, restRes, ordRes] = await Promise.all([
+      fetch('http://localhost:3000/api/categories'),
+      fetch('http://localhost:3000/api/restaurants'),
+      fetch('http://localhost:3000/api/orders')
+    ]);
+    
+    data.categories = await catRes.json();
+    data.restaurants = await restRes.json();
+    data.orders = await ordRes.json();
+    
+    renderCategories();
+    renderRestaurants();
+    renderOrders();
+  } catch (error) {
+    console.error("Failed to load data from backend", error);
+  }
+  
   setupEventListeners();
   updateCartUI();
 }
@@ -107,21 +102,75 @@ function checkAuth() {
 function updateUserUI() {
     if(state.user) {
         if(els.userName) els.userName.innerText = state.user.name;
-        if(els.profileEmail) els.profileEmail.innerText = state.user.email;
+        if(els.profileEmail) els.profileEmail.innerText = state.user.email || '';
         const profileName = document.querySelector('.profile-card h3');
         if(profileName) profileName.innerText = state.user.name;
     }
 }
 
-function login(e) {
+async function sendOTP(e) {
   e.preventDefault();
-  const emailInput = document.getElementById('email').value;
-  const name = emailInput.split('@')[0] || 'User';
+  const name = document.getElementById('auth-name').value;
+  const email = document.getElementById('auth-email').value;
+  if(!name || !email) return;
   
-  state.user = { name: name.charAt(0).toUpperCase() + name.slice(1), email: emailInput };
-  localStorage.setItem('user', JSON.stringify(state.user));
-  els.authModal.classList.remove('show');
-  updateUserUI();
+  state.tempUser = { name, email };
+  
+  try {
+    const res = await fetch('http://localhost:3000/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const result = await res.json();
+    
+    if (result.success) {
+      document.getElementById('email-form').style.display = 'none';
+      document.getElementById('otp-form').style.display = 'block';
+      document.getElementById('auth-title').innerText = 'Verify OTP';
+      document.getElementById('auth-subtitle').innerHTML = `OTP sent to ${email} <br><small style="color:var(--primary)">(Check terminal or enter 1234)</small>`;
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Failed to connect to backend.');
+  }
+}
+
+async function verifyOTP(e) {
+  e.preventDefault();
+  const otp = document.getElementById('auth-otp').value;
+  if(otp.length === 4) {
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: state.tempUser.email, name: state.tempUser.name, otp })
+      });
+      const result = await res.json();
+      
+      if (result.success) {
+        state.user = result.user;
+        localStorage.setItem('user', JSON.stringify(state.user));
+        els.authModal.classList.remove('show');
+        updateUserUI();
+        resetAuth();
+      } else {
+        alert(result.error || 'Invalid OTP');
+      }
+    } catch (error) {
+      alert('Failed to connect to backend');
+    }
+  } else {
+    alert('Please enter a valid 4-digit OTP');
+  }
+}
+
+function resetAuth() {
+  document.getElementById('email-form').style.display = 'block';
+  document.getElementById('otp-form').style.display = 'none';
+  document.getElementById('auth-title').innerText = 'Create Account';
+  document.getElementById('auth-subtitle').innerText = 'Enter details to get started';
+  document.getElementById('auth-otp').value = '';
 }
 
 function logout() {
@@ -148,6 +197,13 @@ function navigate(viewId) {
   if(viewId === 'restaurant') {
     document.getElementById('main-header').style.display = 'none';
     document.getElementById('bottom-nav').style.display = 'none';
+  } else if (viewId === 'map') {
+    document.getElementById('main-header').style.display = 'none';
+    document.getElementById('bottom-nav').style.display = 'flex';
+    setTimeout(() => {
+      initMap();
+      if(mapInstance) mapInstance.invalidateSize();
+    }, 100);
   } else {
     document.getElementById('main-header').style.display = 'flex';
     document.getElementById('bottom-nav').style.display = 'flex';
@@ -158,15 +214,19 @@ function navigate(viewId) {
 function renderCategories() {
   const container = document.getElementById('categories-container');
   let html = `
-    <div class="category-chip active" onclick="app.filterCategory('All')">
+    <div class="category-chip ${state.activeCategory === 'All' ? 'active' : ''}" onclick="app.filterCategory('All')">
       <div class="category-icon">🍽️</div>
       <span class="category-name">All</span>
+    </div>
+    <div class="category-chip ${state.activeCategory === 'Near Me' ? 'active' : ''}" onclick="app.filterNearMe()">
+      <div class="category-icon">📍</div>
+      <span class="category-name">Near Me</span>
     </div>
   `;
   
   data.categories.forEach(c => {
     html += `
-      <div class="category-chip" onclick="app.filterCategory('${c.name}')">
+      <div class="category-chip ${state.activeCategory === c.name ? 'active' : ''}" onclick="app.filterCategory('${c.name}')">
         <div class="category-icon">${c.icon}</div>
         <span class="category-name">${c.name}</span>
       </div>
@@ -177,22 +237,31 @@ function renderCategories() {
 
 function filterCategory(name) {
   state.activeCategory = name;
-  const chips = document.querySelectorAll('.category-chip');
-  chips.forEach(c => {
-    if(c.querySelector('.category-name').innerText === name) {
-      c.classList.add('active');
-    } else {
-      c.classList.remove('active');
-    }
-  });
+  renderCategories();
   renderRestaurants();
 }
 
 function renderRestaurants() {
   const container = document.getElementById('restaurants-container');
-  const filtered = state.activeCategory === 'All' 
-    ? data.restaurants 
-    : data.restaurants.filter(r => r.category === state.activeCategory);
+  let filtered = [...data.restaurants];
+  
+  if (state.activeCategory === 'Near Me' && userLocation) {
+    filtered.forEach(r => {
+      r.distance = getDistanceFromLatLonInKm(userLocation.lat, userLocation.lng, r.location[0], r.location[1]);
+    });
+    filtered.sort((a, b) => a.distance - b.distance);
+  } else if (state.activeCategory !== 'All' && state.activeCategory !== 'Near Me') {
+    filtered = data.restaurants.filter(r => r.category === state.activeCategory);
+  }
+  
+  if (state.searchQuery) {
+    const q = state.searchQuery.toLowerCase();
+    filtered = filtered.filter(r => 
+      r.name.toLowerCase().includes(q) || 
+      r.category.toLowerCase().includes(q) ||
+      r.menu.some(m => m.name.toLowerCase().includes(q))
+    );
+  }
     
   if(filtered.length === 0) {
     container.innerHTML = `<p style="color: var(--text-secondary); text-align:center; padding: 20px;">No restaurants found.</p>`;
@@ -210,7 +279,7 @@ function renderRestaurants() {
           </span>
         </div>
         <div class="restaurant-meta">
-          <div class="meta-item"><span class="material-icons-round">schedule</span> ${r.time}</div>
+          <div class="meta-item"><span class="material-icons-round">${r.distance ? 'place' : 'schedule'}</span> ${r.distance ? r.distance.toFixed(1) + ' km' : r.time}</div>
           <div class="meta-item"><span class="material-icons-round">delivery_dining</span> Free</div>
           <div class="meta-item">${r.price} • ${r.category}</div>
         </div>
@@ -230,23 +299,22 @@ function openRestaurant(id) {
   document.getElementById('restaurant-meta').innerText = `${restaurant.rating} ★ • ${restaurant.time} • ${restaurant.price}`;
   
   const menuContainer = document.getElementById('menu-container');
-  menuContainer.innerHTML = restaurant.menu.map(m => `
+  menuContainer.innerHTML = restaurant.menu.map(m => {
+    const isNonVeg = /chicken|mutton|fish|prawn|kebab|egg/i.test(m.name) || /chicken|mutton|fish|prawn|kebab|egg/i.test(m.desc);
+    return `
     <div class="menu-item">
       <div class="menu-item-info">
+        <div class="diet-icon ${isNonVeg ? 'diet-nonveg' : 'diet-veg'}"></div>
         <div class="menu-item-name">${m.name}</div>
+        <div class="menu-item-price">₹${m.price}</div>
         <div class="menu-item-desc">${m.desc}</div>
-        <div class="menu-item-price">$${m.price.toFixed(2)}</div>
       </div>
-      <div>
+      <div class="menu-item-img-container">
         <img src="${m.image}" class="menu-item-img" alt="${m.name}">
-        <div style="display:flex; justify-content:center;">
-          <button class="add-btn" onclick="app.addToCart(${restaurant.id}, ${m.id})">
-            <span class="material-icons-round">add</span>
-          </button>
-        </div>
+        <button class="add-btn" onclick="app.addToCart(${restaurant.id}, ${m.id})">ADD</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
   
   navigate('restaurant');
 }
@@ -270,7 +338,7 @@ function renderOrders() {
         <div class="order-items">${o.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</div>
         <div class="order-footer">
           <span style="color:var(--text-secondary); font-size:13px;">${o.date}</span>
-          <span class="order-total">$${o.total.toFixed(2)}</span>
+          <span class="order-total">₹${o.total}</span>
         </div>
       </div>
     `;
@@ -315,7 +383,7 @@ function updateCartUI() {
   
   els.cartBadge.innerText = totalQty;
   els.cartBadge.style.display = totalQty > 0 ? 'flex' : 'none';
-  els.cartTotalPrice.innerText = `$${totalPrice.toFixed(2)}`;
+  els.cartTotalPrice.innerText = `₹${totalPrice}`;
   
   if(state.cart.length === 0) {
     els.cartItemsContainer.innerHTML = `
@@ -331,7 +399,7 @@ function updateCartUI() {
     <div class="cart-item">
       <div class="cart-item-info">
         <div class="cart-item-name">${c.item.name}</div>
-        <div class="cart-item-price">$${(c.item.price * c.qty).toFixed(2)}</div>
+        <div class="cart-item-price">₹${(c.item.price * c.qty)}</div>
         <div style="font-size:12px; color:var(--text-secondary);">${c.restaurant.name}</div>
       </div>
       <div class="qty-controls">
@@ -348,25 +416,35 @@ function toggleCart() {
   els.drawerOverlay.classList.toggle('show');
 }
 
-function checkout() {
+async function checkout() {
   if(state.cart.length === 0) return;
   
-  // Create order
-  const newOrder = {
-    id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+  const orderPayload = {
     restaurantId: state.cart[0].restaurant.id, 
     items: state.cart.map(c => ({ name: c.item.name, qty: c.qty })),
-    total: state.cart.reduce((sum, c) => sum + (c.item.price * c.qty), 0),
-    status: 'preparing',
-    date: 'Just now'
+    total: state.cart.reduce((sum, c) => sum + (c.item.price * c.qty), 0)
   };
   
-  data.orders.unshift(newOrder);
-  state.cart = [];
-  updateCartUI();
-  renderOrders();
-  toggleCart();
-  navigate('orders');
+  try {
+    const res = await fetch('http://localhost:3000/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderPayload)
+    });
+    const result = await res.json();
+    
+    if(result.success) {
+      data.orders.unshift(result.order);
+      state.cart = [];
+      updateCartUI();
+      renderOrders();
+      toggleCart();
+      navigate('orders');
+    }
+  } catch (error) {
+    console.error(error);
+    alert('Failed to create order. Is backend running?');
+  }
 }
 
 // Event Listeners
@@ -382,18 +460,56 @@ function setupEventListeners() {
   document.getElementById('close-cart-btn').addEventListener('click', toggleCart);
   els.drawerOverlay.addEventListener('click', toggleCart);
   
-  els.loginForm.addEventListener('submit', login);
+  const emailForm = document.getElementById('email-form');
+  const otpForm = document.getElementById('otp-form');
+  if(emailForm) emailForm.addEventListener('submit', sendOTP);
+  if(otpForm) otpForm.addEventListener('submit', verifyOTP);
+  
   els.logoutBtn.addEventListener('click', logout);
   document.getElementById('checkout-btn').addEventListener('click', checkout);
+  
+  if(els.searchInput) {
+    els.searchInput.addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      renderRestaurants();
+    });
+  }
+}
+
+// Map Logic
+function initMap() {
+  if(mapInstance) return;
+  mapInstance = L.map('map-container').setView([12.9716, 77.5946], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+  }).addTo(mapInstance);
+  
+  data.restaurants.forEach(r => {
+    L.marker(r.location).addTo(mapInstance)
+      .bindPopup(`<b>${r.name}</b><br>${r.category}`);
+  });
+  
+  if(navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      const userMarker = L.circleMarker([lat, lng], {color: 'red', radius: 8, fillOpacity: 0.8}).addTo(mapInstance);
+      userMarker.bindPopup("<b>You are here</b>").openPopup();
+      mapInstance.setView([lat, lng], 13);
+    });
+  }
 }
 
 // Expose methods to global scope for inline handlers
 window.app = {
   navigate,
   filterCategory,
+  filterNearMe,
   openRestaurant,
   addToCart,
-  updateCartQty
+  updateCartQty,
+  resetAuth
 };
 
 // Start
